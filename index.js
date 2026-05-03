@@ -1,69 +1,75 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const axios = require('axios');
-require('dotenv').config();
+const qrcode = require('qrcode-terminal');
 
-// 🚀 බොට්ගේ පෝන් නම්බර් එක
-const myNumber = "94781163740";
+// --- [MASTER SYSTEM PROMPT] ---
+const SYSTEM_PROMPT = `
+[IDENTITY]
+Name: Astro Mission Alpha Bot (Official AI of R.A.S. - රදපස).
+Developer: Sithija Nimsara.
+BANNED: Never mention Google, Gemini, OpenAI, or ChatGPT.
 
+[SCIENTIFIC SCOPE]
+Expert in: Astronomy, Astrophysics, Space Missions (Apollo, Saturn V), and Space Mysteries (Black Knight).
+Affiliation: Radapasa Astronomical Society, Rajapaksa Central College.
+
+[OPERATIONAL RULES]
+Language: Concise mix of Sinhala and English.
+Tone: Inspiring & Professional. 
+Out-of-Scope: If unrelated to Space/Science, say "සමාවෙන්න, මම නිර්මාණය කර ඇත්තේ තාරකා විද්‍යාව සහ රදපස තාරකා විද්‍යා සංගමයට අදාළ දේ සඳහා පමණි."
+`;
+
+// --- [CLIENT INITIALIZATION] ---
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { 
-        headless: true, 
-        args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+    puppeteer: {
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+        ],
     }
 });
 
-// --- මෙතන QR එක PRINT වෙන්නේ නැහැ, CODE එක විතරයි ඉල්ලන්නේ ---
-client.on('qr', async (qr) => {
-    console.log('--------------------------------------------');
-    console.log('⏳ WAITING FOR PAIRING CODE FROM WHATSAPP...');
-    
-    try {
-        const code = await client.requestPairingCode(myNumber);
-        console.log('--------------------------------------------');
-        console.log('🚀 YOUR ASTRO BOT PAIRING CODE IS:');
-        console.log(`\n       >>>  ${code}  <<<       \n`);
-        console.log('--------------------------------------------');
-        console.log('1. Open WhatsApp -> Linked Devices');
-        console.log('2. Link with phone number instead');
-        console.log('3. Enter the code above');
-    } catch (err) {
-        console.error("❌ Pairing Error:", err.message);
-    }
+// QR Code Generation (For Terminal Logs)
+client.on('qr', (qr) => {
+    console.log('--- [SCAN THIS QR CODE] ---');
+    qrcode.generate(qr, { small: true });
 });
 
+// Client Ready State
 client.on('ready', () => {
-    console.log('✅ ASTRO BOT IS ONLINE!');
+    console.log('🚀 Astro Mission Alpha Bot is ONLINE!');
 });
 
-client.on('message', async (msg) => {
-    try {
-        const chat = await msg.getChat();
-        const contact = await msg.getContact();
-        const body = msg.body ? msg.body.toLowerCase() : "";
+// Authentication Failure Handling
+client.on('auth_failure', msg => {
+    console.error('❌ AUTHENTICATION FAILURE:', msg);
+});
 
-        if (chat.isGroup) {
-            const isMentioned = msg.mentionedIds.includes(client.info.wid._serialized);
-            if (!isMentioned && !body.includes('astro')) return;
-        }
+// --- [MESSAGE HANDLING] ---
+client.on('message', async msg => {
+    const chat = await msg.getChat();
+    const userMessage = msg.body.toLowerCase();
 
-        const response = await axios.post(`${process.env.SUPABASE_URL}/functions/v1/process-message`, {
-            phone_number: contact.number,
-            user_name: contact.pushname || "Alpha Explorer",
-            message: msg.body,
-            is_group: chat.isGroup
-        }, {
-            headers: {
-                'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
-                'Content-Type': 'application/json'
-            }
-        });
+    // Greeting / Intro
+    if (userMessage === 'hi' || userMessage === 'oya kauda') {
+        msg.reply("මම Astro Mission Alpha Bot. මාව නිර්මාණය කළේ සිතිජ නිම්සර, රදපස තාරකා විද්‍යා සංගමය (R.A.S.) වෙනුවෙන්. තාරකා විද්‍යාව හෝ අභ්‍යවකාශය ගැන ඕනෑම දෙයක් මගෙන් අහන්න! 🌌🚀");
+    } 
+    
+    // Simple Astronomy Answer Trigger (Logic can be expanded with an AI API)
+    else if (userMessage.includes('black knight')) {
+        msg.reply("Black Knight Satellite එක කියන්නේ අවුරුදු 13,000ක් පැරණි අභිරහස් චන්ද්‍රිකාවක් කියලා විශ්වාස කරන වස්තුවක්. හැබැයි විද්‍යාත්මකව මේක STS-88 මෙහෙයුමේදී ගිලිහී ගිය 'Thermal Blanket' එකක් විදිහටයි සැලකෙන්නේ. 🛰️");
+    }
 
-        if (response.data && response.data.reply) {
-            await msg.reply(response.data.reply);
-        }
-    } catch (err) {
-        console.error("❌ Error:", err.message);
+    // Out-of-Scope Fallback (Basic Logic)
+    else if (userMessage.includes('cook') || userMessage.includes('football') || userMessage.includes('politics')) {
+        msg.reply("සමාවෙන්න, මම නිර්මාණය කර ඇත්තේ තාරකා විද්‍යාව සහ රදපස තාරකා විද්‍යා සංගමයට අදාළ දේ සඳහා පමණි.");
     }
 });
 

@@ -1,59 +1,39 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const axios = require('axios');
 require('dotenv').config();
 
-// 🚀 බොට්ගේ පෝන් නම්බර් එක (94 සහ බිංදුව නැතිව ඉතිරි ටික)
-const myNumber = "94718243750";
+// 🚀 බොට්ගේ පෝන් නම්බර් එක
+const myNumber = "94781163740";
 
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: { 
         headless: true, 
-        args: [
-            '--no-sandbox', 
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--disable-gpu'
-        ] 
+        args: ['--no-sandbox', '--disable-setuid-sandbox'] 
     }
 });
 
-// --- PAIRING CODE LOGIC ---
+// --- මෙතන QR එක PRINT වෙන්නේ නැහැ, CODE එක විතරයි ඉල්ලන්නේ ---
 client.on('qr', async (qr) => {
-    // Railway logs වල QR එක පේන්න තියමු
-    qrcode.generate(qr, { small: true });
-    
     console.log('--------------------------------------------');
-    console.log('🔔 QR RECEIVED! REQUESTING PAIRING CODE...');
+    console.log('⏳ WAITING FOR PAIRING CODE FROM WHATSAPP...');
     
     try {
-        // Pairing Code එක ඉල්ලීම
         const code = await client.requestPairingCode(myNumber);
-        
         console.log('--------------------------------------------');
         console.log('🚀 YOUR ASTRO BOT PAIRING CODE IS:');
-        console.log(`       >>>  ${code}  <<<       `);
+        console.log(`\n       >>>  ${code}  <<<       \n`);
         console.log('--------------------------------------------');
-        console.log('HOW TO USE:');
-        console.log('1. Open WhatsApp -> Settings -> Linked Devices.');
-        console.log('2. Tap "Link a Device".');
-        console.log('3. Tap "Link with phone number instead".');
-        console.log('4. Enter the code shown above.');
-        console.log('--------------------------------------------');
+        console.log('1. Open WhatsApp -> Linked Devices');
+        console.log('2. Link with phone number instead');
+        console.log('3. Enter the code above');
     } catch (err) {
-        console.error("❌ Pairing code error:", err);
+        console.error("❌ Pairing Error:", err.message);
     }
 });
 
 client.on('ready', () => {
-    console.log('--------------------------------------------');
-    console.log('✅ ASTRO MISSION ALPHA BOT IS ONLINE!');
-    console.log('--------------------------------------------');
+    console.log('✅ ASTRO BOT IS ONLINE!');
 });
 
 client.on('message', async (msg) => {
@@ -62,16 +42,11 @@ client.on('message', async (msg) => {
         const contact = await msg.getContact();
         const body = msg.body ? msg.body.toLowerCase() : "";
 
-        // --- GROUP & SAFETY LOGIC ---
         if (chat.isGroup) {
             const isMentioned = msg.mentionedIds.includes(client.info.wid._serialized);
-            // බොට්ව Mention කළොත් හෝ "Astro" කියන වචනය තිබ්බොත් විතරක් රිප්ලයි කරයි
-            const containsKeywords = body.includes('astro') || body.includes('රදපස'); 
-
-            if (!isMentioned && !containsKeywords) return; 
+            if (!isMentioned && !body.includes('astro')) return;
         }
 
-        // Supabase Edge Function එකට දත්ත යැවීම
         const response = await axios.post(`${process.env.SUPABASE_URL}/functions/v1/process-message`, {
             phone_number: contact.number,
             user_name: contact.pushname || "Alpha Explorer",
@@ -87,9 +62,8 @@ client.on('message', async (msg) => {
         if (response.data && response.data.reply) {
             await msg.reply(response.data.reply);
         }
-
     } catch (err) {
-        console.error("❌ Processing error:", err.message);
+        console.error("❌ Error:", err.message);
     }
 });
 

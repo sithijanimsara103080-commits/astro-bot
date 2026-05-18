@@ -1,29 +1,57 @@
-# (උඩ කොටස් ඔක්කොම එහෙම්මම තියෙන්න ඇරලා, Run All 4 Custom Lifetime Streams කියන තැන යට තියෙන Python කේතයේ අන්තිම ටික විතරක් මෙහෙම වෙනස් කරන්න)
-    run: |
+name: 24/7 Car Crushing Reverse Streamer
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Install System Dependencies & FFmpeg
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg python3-pip
+
+    - name: Install yt-dlp
+      run: |
+        sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
+        sudo chmod a+rx /usr/local/bin/yt-dlp
+
+    - name: Run Single Custom Stream
+      env:
+        KEY_2: "6j63-es9v-kvq1-wmry-66g2"
+      run: |
         python - <<EOF
         import os
         import subprocess
-        import threading
         import time
 
+        # 🎵 කෝපිරයිට් නැති බැක්ග්‍රවුන්ඩ් සින්දුව
         BG_MUSIC_1 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-
-        def run_stream_2():
-            stream_key = os.getenv("KEY_2")
-            vid_url_cmd = "yt-dlp -g -f 'bestvideo[ext=mp4]'" + " https://www.youtube.com/watch?v=QhYAr74CuMs"
-            video_direct_url = subprocess.check_output(vid_url_cmd, shell=True).decode('utf-8').strip().split('\n')[0]
-            
-            hls_url = f"https://a.upload.youtube.com/http_upload_hls?cid={stream_key}&copy=0&file=live.m3u8"
-            
-            ffmpeg_cmd = (
-                f"ffmpeg -re -stream_loop -1 -i '{video_direct_url}' -stream_loop -1 -i '{BG_MUSIC_1}' "
-                f"-filter_complex \"[0:v]reverse,crop=ih*9/16:ih,scale=1080:1920[v];[1:a]volume=0.8[bg]\" "
-                f"-map \"[v]\" -map \"[bg]\" -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -r 30 -g 60 -b:v 3000k "
-                f"-acodec aac -b:a 128k -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST '{hls_url}'"
-            )
-            print("🚀 Stream 2 (Car Crushing Reverse) විතරක් පණ ගන්වනවා...")
-            subprocess.run(ffmpeg_cmd, shell=True)
-
-        # 🎯 මල්ටි-ත්‍රෙඩ් නැතුව කෙළින්ම මේක විතරක් දුවනවා
-        run_stream_2()
+        
+        stream_key = os.getenv("KEY_2")
+        
+        # 🔍 යූටියුබ් එකෙන් වීඩියෝ ලින්ක් එක ක්ලවුඩ් එකට අදිනවා
+        vid_url_cmd = "yt-dlp -g -f 'bestvideo[ext=mp4]'" + " https://www.youtube.com/watch?v=QhYAr74CuMs"
+        video_direct_url = subprocess.check_output(vid_url_cmd, shell=True).decode('utf-8').strip().split('\n')[0]
+        
+        hls_url = f"https://a.upload.youtube.com/http_upload_hls?cid={stream_key}&copy=0&file=live.m3u8"
+        
+        # 🎯 FFmpeg Magic: ලූප් කරනවා, රිවර්ස් කරනවා, වර්ටිකල් ක්‍රොප් කරනවා, සින්දුව මික්ස් කරනවා
+        ffmpeg_cmd = (
+            f"ffmpeg -re -stream_loop -1 -i '{video_direct_url}' -stream_loop -1 -i '{BG_MUSIC_1}' "
+            f"-filter_complex \"[0:v]reverse,crop=ih*9/16:ih,scale=1080:1920[v];[1:a]volume=0.8[bg]\" "
+            f"-map \"[v]\" -map \"[bg]\" -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -r 30 -g 60 -b:v 3000k "
+            f"-acodec aac -b:a 128k -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST '{hls_url}'"
+        )
+        
+        print("🚀 Stream 2 (Car Crushing Reverse) සජීවීව යූටියුබ් එකට තල්ලු කරනවා...")
+        subprocess.run(ffmpeg_cmd, shell=True)
         EOF

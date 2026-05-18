@@ -39,28 +39,35 @@ jobs:
         import time
         from selenium import webdriver
         from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.service import Service
 
         LIVE_CHAT_URL = "https://studio.youtube.com/live_chat?is_popout=1&v=zX7iYrKOY84"
         STREAM_KEY = os.getenv("STREAM_KEY")
         OVERLAY_IMAGE = "chat_screen.png"
 
-        # 1. 🌐 Setup Headless Chromium (බලෙන්ම මොබයිල් වර්ටිකල් සෙටින්ග්ස් දානවා)
+        # 1. 🌐 Setup Headless Chromium
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         
-        # 🎯 මෙන්න ට්‍රික් එක: බ්‍රවුසර් එක ඇන්ඩ්‍රොයිඩ් ෆෝන් එකක් විදිහට වෙස් ගන්වනවා (Mobile View)
+        # 🎯 FIX: සර්වර් එකේ තියෙන Chromium බ්‍රවුසර් එක තියෙන තැන බලෙන්ම සෙට් කරනවා
+        chrome_options.binary_location = "/usr/bin/chromium-browser"
+        
+        # 🎯 බ්‍රවුසර් එක ඇන්ඩ්‍රොයිඩ් ෆෝන් එකක් විදිහට වෙස් ගන්වනවා (Mobile View)
         mobile_emulation = { "deviceName": "Nexus 5" }
         chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
         chrome_options.add_argument("--window-size=1080,1920") 
 
-        driver = webdriver.Chrome(options=chrome_options)
+        # Driver එක සාර්ථකව පණ ගැන්වීම
+        service = Service(executable_path="/usr/bin/chromedriver")
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        
         driver.get(LIVE_CHAT_URL)
         print("✅ වර්ටිකල් මොබයිල් චැට් එකට සාර්ථකව සම්බන්ධ වුණා!")
-        time.sleep(12) # චැට් එක සම්පූර්ණයෙන්ම ලෝඩ් වෙන්න තත්පර 12ක් දෙනවා
+        time.sleep(12) # චැට් එක ලෝඩ් වෙන්න වෙලාව දෙනවා
 
-        # 2. 📸 Screenshot Thread (හැම තත්පරෙම 1080x1920 වර්ටිකල් පින්තූරයක් ගන්නවා)
+        # 2. 📸 Screenshot Thread
         def capture_chat():
             while True:
                 try:
@@ -76,7 +83,6 @@ jobs:
         time.sleep(6) # පළමු වර්ටිකල් පින්තූරය හැදෙනකන් ඉන්නවා
         hls_url = f"https://a.upload.youtube.com/http_upload_hls?cid={STREAM_KEY}&copy=0&file=live.m3u8"
         
-        # 🎯 මෙතන -s 1080x1920 දාලා වීඩියෝ අවුට්පුට් එක 100%ක්ම වර්ටිකල් (Shorts/Reels Layout) කලා මචං
         ffmpeg_cmd = (
             f"ffmpeg -re -loop 1 -i {OVERLAY_IMAGE} -f lavfi -i anullsrc=cl=stereo:r=44100 "
             f"-vcodec libx264 -pix_fmt yuv420p -s 1080x1920 -preset ultrafast -r 30 -g 60 -b:v 3000k -maxrate 3000k -bufsize 6000k "

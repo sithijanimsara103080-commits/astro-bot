@@ -55,7 +55,7 @@ jobs:
                 os.system(f"wget -O video.mp4 '{video_direct_url}'")
                 print("✅ video.mp4 සාර්ථකව සේව් කරගත්තා!")
             else:
-                print("❌ API එකෙන් ලින්ක් එක දුන්නේ නැහැ මචං.")
+                print("❌ API එකෙන් ලින්ක් එක දුන්නේ නැහැ මචං. වෙනත් සර්වර් එකක් ට්‍රයි කරමු.")
                 exit(1)
         except Exception as e:
             print(f"❌ Error: {e}")

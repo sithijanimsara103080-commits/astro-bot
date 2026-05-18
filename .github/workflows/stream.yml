@@ -1,4 +1,4 @@
-name: Cloud Mega Video & Music Downloader (All Streams Setup)
+name: Cloud Mega Video & Music Downloader (JS Challenge Fixed)
 
 on:
   workflow_dispatch:
@@ -12,6 +12,12 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
+
+    # 🎯 FIX: යූටියුබ් එකේ 'n challenge' එක බයිපාස් කරන්න Node.js runtime එකක් දානවා
+    - name: Setup Node.js Runtime for YT Challenge Solver
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
 
     - name: Install yt-dlp
       run: |
@@ -30,7 +36,7 @@ jobs:
         .youtube.com	TRUE	/	TRUE	1813648610	PREF	f6=40000000&tz=Asia.Colombo&f7=100
         .youtube.com	TRUE	/	FALSE	1813346369	SID	g.a0009gg0WL4u6S3sBp-DncT01A4pP3mDImXIj4SkV1oPAeiti7H9MFlYeLhkrKDYyFSrcMbn2AACgYKAc0SARcSFQHGX2MiB7XNUSRUmXbMgl4TbUKdhRoVAUF8yKrE3WH4myEHfKtBFhcEAaG50076
         .youtube.com	TRUE	/	TRUE	1813346369	__Secure-1PSID	g.a0009gg0WL4u6S3sBp-DncT01A4pP3mDImXIj4SkV1oPAeiti7H9HYWo7THYx6FtUn7w5rj8VwACgYKAbsSARcSFQHGX2MiNAmr78AtsJ-k09nUATyxqxoVAUF8yKo2cT9OtpjMmxqq7BGHqAZZ0076
-        .youtube.com	TRUE	/	TRUE	1813346369	__Secure-3PSID	g.a0009gg0WL4u6S3sBp-DncT01A4pP3mDImXIj4SkV1oPAeiti7H9rApFl-iA6aVCd5Py91ztTAACgYKAfMSARcSFQHGX2MiMYT3Ncb6zixMfO0W2hBTkxoVAUF8yKqDeXQSpCZsLOQyx14YClyO0076
+        .youtube.com	TRUE	/	TRUE	1813346369	__Secure-3PSID	g.a0009gg0WL4u6S3sBp-DncT01A4pP3mDImXIj4SkV1oPAeily7H9rApFl-iA6aVCd5Py91ztTAACgYKAfMSARcSFQHGX2MiMYT3Ncb6zixMfO0W2hBTkxoVAUF8yKqDeXQSpCZsLOQyx14YClyO0076
         .youtube.com	TRUE	/	FALSE	1813346369	HSID	At-XHlpCoGjREMh7L
         .youtube.com	TRUE	/	TRUE	1813346369	SSID	A7LNJpB0b1Nd8ucN4
         .youtube.com	TRUE	/	FALSE	1813346369	APISID	zM6flKLoSQx9o1u2/A4-OSGSqxXaJR42WK
@@ -51,16 +57,15 @@ jobs:
 
     - name: Download & Setup Files
       run: |
-        # 🚗 [KEY 2 සඳහා] - Car Crushing Reverse Video + Music
-        echo "📥 Downloading Video for Key 2..."
-        yt-dlp --cookies cookies.txt -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" --merge-output-format mp4 "https://www.youtube.com/watch?v=QhYAr74CuMs" -o "video.mp4"
+        # 🚗 [KEY 2] - ඔන්න උඹ කියපු ඔරිජිනල් වීඩියෝ එකම දැම්මා මචං!
+        echo "📥 Downloading Original Video for Key 2..."
+        yt-dlp --cookies cookies.txt -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4 "https://www.youtube.com/watch?v=QhYAr74CuMs" -o "video.mp4"
         echo "📥 Downloading Music for Key 2..."
         wget -O music.mp3 "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
 
-        # 🛠️ [KEY 3 සඳහා] - Car Crushing 3 Videos Merged + Music 2
-        # (yt-dlp එකෙන්ම වීඩියෝ 3ම බාගෙන, එකම වෙලාවෙ car_merge.mp4 විදියට ලස්සනට එකතු කරනවා)
+        # 🛠️ [KEY 3] - Car Crushing 3 Videos Merged
         echo "📥 Downloading and Merging 3 Videos for Key 3..."
-        yt-dlp --cookies cookies.txt -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" --merge-output-format mp4 \
+        yt-dlp --cookies cookies.txt -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4 \
           "https://www.youtube.com/watch?v=77fcAjcF1F4" \
           "https://www.youtube.com/watch?v=wcCV5TnmwqM" \
           "https://www.youtube.com/watch?v=MK1VPyx0gXg" \
@@ -68,9 +73,9 @@ jobs:
         echo "📥 Downloading Music 2 for Key 3..."
         wget -O music2.mp3 "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
 
-        # 🥚 [KEY 4 සඳහා] - Raw Egg Peeling 2 Videos Merged
+        # 🥚 [KEY 4] - Raw Egg Peeling 2 Videos Merged
         echo "📥 Downloading and Merging 2 Videos for Key 4..."
-        yt-dlp --cookies cookies.txt -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" --merge-output-format mp4 \
+        yt-dlp --cookies cookies.txt -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4 \
           "https://www.youtube.com/watch?v=ggWDml2qWtY" \
           "https://www.youtube.com/watch?v=PmrrGR7Aohs" \
           --concat-playlist always -o "egg_merge.mp4"
@@ -82,10 +87,8 @@ jobs:
         git config --global user.name "GitHub Action"
         git config --global user.email "action@github.com"
         
-        # Security එකට cookies ටික මකනවා
         rm -f cookies.txt
         
-        # ඔක්කොම ෆයිල්ස් ටික Repository එකට ඇඩ් කරනවා
         git add video.mp4 music.mp3 car_merge.mp4 music2.mp3 egg_merge.mp4
-        git commit -m "Mega Download: Setup all stream assets via Cloud Cookies" || echo "වෙනස්කම් නැත!"
+        git commit -m "Mega Download: Setup all stream assets with Node JS Runtime solver" || echo "වෙනස්කම් නැත!"
         git push origin main

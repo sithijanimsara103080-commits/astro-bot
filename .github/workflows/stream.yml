@@ -1,92 +1,13 @@
-name: 24/7 Mega Multi-Streamer (4 Streams with Advanced Video Editing)
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-jobs:
-  stream:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
-
-    - name: Install System Dependencies & FFmpeg
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ffmpeg xvfb chromium-browser chromium-chromedriver python3-pip
-
-    - name: Install Python & Node Packages
-      run: |
-        pip install selenium pillow requests
-        sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
-        sudo chmod a+rx /usr/local/bin/yt-dlp
-
-    - name: Run All 4 Custom Lifetime Streams
-      env:
-        KEY_1: "9mxh-05bs-aez1-3tcx-b302"
-        KEY_2: "6j63-es9v-kvq1-wmry-66g2"
-        KEY_3: "2mb7-chgx-xjpq-h8ta-eyww"
-        KEY_4: "2rx7-18j8-s22j-dqes-e41r"
-      run: |
+# (උඩ කොටස් ඔක්කොම එහෙම්මම තියෙන්න ඇරලා, Run All 4 Custom Lifetime Streams කියන තැන යට තියෙන Python කේතයේ අන්තිම ටික විතරක් මෙහෙම වෙනස් කරන්න)
+    run: |
         python - <<EOF
         import os
         import subprocess
         import threading
         import time
 
-        # 🎵 කෝපිරයිට් නැති සින්දු (Royalty Free Background Music URLs)
         BG_MUSIC_1 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-        BG_MUSIC_2 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
 
-        # -------------------------------------------------------------
-        # 🔴 STREAM 1: සජීවී ලයිව් චැට් (Full Vertical White Theme)
-        # -------------------------------------------------------------
-        def run_stream_1():
-            from selenium import webdriver
-            from selenium.webdriver.chrome.options import Options
-            from selenium.webdriver.chrome.service import Service
-            
-            stream_key = os.getenv("KEY_1")
-            chat_url = "https://studio.youtube.com/live_chat?is_popout=1&v=zX7iYrKOY84"
-            overlay_image = "chat_screen_1.png"
-            
-            chrome_options = Options()
-            chrome_options.add_argument("--headless")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.binary_location = "/usr/bin/chromium-browser"
-            
-            mobile_emulation = { "deviceName": "Nexus 5" }
-            chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
-            chrome_options.add_argument("--window-size=1080,1920")
-
-            service = Service(executable_path="/usr/bin/chromedriver")
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-            driver.get(chat_url)
-            
-            def capture():
-                while True:
-                    try: driver.save_screenshot(overlay_image)
-                    except: pass
-                    time.sleep(1)
-            threading.Thread(target=capture, daemon=True).start()
-            time.sleep(10)
-
-            hls_url = f"https://a.upload.youtube.com/http_upload_hls?cid={stream_key}&copy=0&file=live.m3u8"
-            ffmpeg_cmd = (
-                f"ffmpeg -re -loop 1 -i {overlay_image} -f lavfi -i anullsrc=cl=stereo:r=44100 "
-                f"-vcodec libx264 -pix_fmt yuv420p -s 1080x1920 -preset ultrafast -r 30 -g 60 -b:v 2500k "
-                f"-acodec aac -b:a 128k -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST '{hls_url}'"
-            )
-            subprocess.run(ffmpeg_cmd, shell=True)
-
-        # -------------------------------------------------------------
-        # 🚗 STREAM 2: Car Crushing (Reverse, Crop Vertical & Free BG Music)
-        # -------------------------------------------------------------
         def run_stream_2():
             stream_key = os.getenv("KEY_2")
             vid_url_cmd = "yt-dlp -g -f 'bestvideo[ext=mp4]'" + " https://www.youtube.com/watch?v=QhYAr74CuMs"
@@ -100,69 +21,9 @@ jobs:
                 f"-map \"[v]\" -map \"[bg]\" -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -r 30 -g 60 -b:v 3000k "
                 f"-acodec aac -b:a 128k -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST '{hls_url}'"
             )
+            print("🚀 Stream 2 (Car Crushing Reverse) විතරක් පණ ගන්වනවා...")
             subprocess.run(ffmpeg_cmd, shell=True)
 
-        # -------------------------------------------------------------
-        # 🛠️ STREAM 3: Car Crushing 3 Videos Merged (Crop Vertical & Free BG Music)
-        # -------------------------------------------------------------
-        def run_stream_3():
-            stream_key = os.getenv("KEY_3")
-            vids = [
-                "https://www.youtube.com/watch?v=77fcAjcF1F4",
-                "https://www.youtube.com/watch?v=wcCV5TnmwqM",
-                "https://www.youtube.com/watch?v=MK1VPyx0gXg"
-            ]
-            urls = []
-            for v in vids:
-                cmd = f"yt-dlp -g -f 'bestvideo[ext=mp4]'" + f" {v}"
-                urls.append(subprocess.check_output(cmd, shell=True).decode('utf-8').strip().split('\n')[0])
-
-            hls_url = f"https://a.upload.youtube.com/http_upload_hls?cid={stream_key}&copy=0&file=live.m3u8"
-            
-            ffmpeg_cmd = (
-                f"ffmpeg -re -stream_loop -1 -i '{urls[0]}' -stream_loop -1 -i '{urls[1]}' -stream_loop -1 -i '{urls[2]}' -stream_loop -1 -i '{BG_MUSIC_2}' "
-                f"-filter_complex \"[0:v]crop=ih*9/16:ih,scale=1080:1920[v0];[1:v]crop=ih*9/16:ih,scale=1080:1920[v1];[2:v]crop=ih*9/16:ih,scale=1080:1920[v2];"
-                f"[v0][v1][v2]concat=n=3:v=1:a=0[v];[3:a]volume=0.8[bg]\" "
-                f"-map \"[v]\" -map \"[bg]\" -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -r 30 -g 60 -b:v 3000k "
-                f"-acodec aac -b:a 128k -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST '{hls_url}'"
-            )
-            subprocess.run(ffmpeg_cmd, shell=True)
-
-        # -------------------------------------------------------------
-        # 🥚 STREAM 4: Raw Egg Peeling 2 Videos Merged (Normal Loop)
-        # -------------------------------------------------------------
-        def run_stream_4():
-            stream_key = os.getenv("KEY_4")
-            vids = [
-                "https://www.youtube.com/watch?v=ggWDml2qWtY",
-                "https://www.youtube.com/watch?v=PmrrGR7Aohs"
-            ]
-            urls = []
-            for v in vids:
-                cmd = f"yt-dlp -g -f 'bestvideo[ext=mp4]'" + f" {v}"
-                urls.append(subprocess.check_output(cmd, shell=True).decode('utf-8').strip().split('\n')[0])
-
-            hls_url = f"https://a.upload.youtube.com/http_upload_hls?cid={stream_key}&copy=0&file=live.m3u8"
-            
-            # 🎯 FIX: බ්‍රැකට් එරර් එක සම්පූර්ණයෙන්ම නිවැරදි කර, සයිලන්ට් ඕඩියෝ එක වෙනම ලූපයකින් මික්ස් කළා
-            ffmpeg_cmd = (
-                f"ffmpeg -re -stream_loop -1 -i '{urls[0]}' -stream_loop -1 -i '{urls[1]}' -f lavfi -i anullsrc=cl=stereo:r=44100 "
-                f"-filter_complex \"[0:v]scale=1080:1920[v0];[1:v]scale=1080:1920[v1];[v0][v1]concat=n=2:v=1:a=0[v]\" "
-                f"-map \"[v]\" -map 2:a -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -r 30 -g 60 -b:v 2500k "
-                f"-acodec aac -b:a 128k -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST '{hls_url}'"
-            )
-            subprocess.run(ffmpeg_cmd, shell=True)
-
-
-        # 🎯 Thread 4ම එකවර පණ ගැන්වීම
-        funcs = [run_stream_1, run_stream_2, run_stream_3, run_stream_4]
-        threads = []
-        for f in funcs:
-            t = threading.Thread(target=f)
-            threads.append(t)
-            t.start()
-            time.sleep(3)
-
-        for t in threads:
-            t.join()
+        # 🎯 මල්ටි-ත්‍රෙඩ් නැතුව කෙළින්ම මේක විතරක් දුවනවා
+        run_stream_2()
         EOF

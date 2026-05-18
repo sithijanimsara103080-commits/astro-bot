@@ -1,4 +1,4 @@
-name: Cloud Video & Music Auto Downloader (Bypass Bot Block)
+name: Cloud Video & Music Auto Downloader (Multi-Server Bypass)
 
 on:
   workflow_dispatch:
@@ -30,36 +30,65 @@ jobs:
     - name: Install Python Requests
       run: pip install requests
 
-    - name: Bypass and Download Video
+    - name: Bypass and Download Video via Invidious Network
       run: |
         python - <<EOF
         import requests
-        import time
         import os
+        import re
+        import sys
 
         yt_url = "${{ github.event.inputs.youtube_url }}"
-        print("🔍 Third-party API එකක් හරහා වීඩියෝ ලින්ක් එක බයිපාස් කරනවා...")
         
-        # Cobalt API එක පාවිච්චි කරලා යූටියුබ් බොට් බ්ලොක් එක කෙළින්ම බයිපාස් කරනවා
-        api_url = "https://api.cobalt.tools/api/json"
-        headers = {"Accept": "application/json", "Content-Type": "application/json"}
-        payload = {"url": yt_url, "vQuality": "720", "isAudioOnly": False}
-        
-        try:
-            response = requests.post(api_url, json=payload, headers=headers).json()
-            video_direct_url = response.get("url")
+        # 🔗 යූටියුබ් ලින්ක් එකෙන් වීඩියෝ ID එක විතරක් වෙන් කරලා ගන්නවා
+        video_id = None
+        id_match = re.search(r'(?:v=|\/v\/|embed\/|youtu\.be\/|\/shorts\/)([^"&?\/\s]+)', yt_url)
+        if id_match:
+            video_id = id_match.group(1)
             
-            if video_direct_url:
-                print("📥 බයිපාස් එක සාර්ථකයි! වීඩියෝව ක්ලවුඩ් එක ඇතුළට බාගත වෙමින් පවතී...")
-                # 0% ඩේටා වලින් සර්වර් එක ඇතුළටම ගන්නවා
-                os.system(f"wget -O video.mp4 '{video_direct_url}'")
-                print("✅ video.mp4 සාර්ථකව සේව් කරගත්තා!")
-            else:
-                print("❌ API එකෙන් ලින්ක් එක දුන්නේ නැහැ මචං. වෙනත් සර්වර් එකක් ට්‍රයි කරමු.")
-                exit(1)
-        except Exception as e:
-            print(f"❌ Error: {e}")
-            exit(1)
+        if not video_id:
+            print("❌ වැරදි යූටියුබ් ලින්ක් එකක් මචං! වීඩියෝ ID එක හොයාගන්න බැහැ.")
+            sys.exit(1)
+
+        # 🌐 ලෝකේ තියෙන පට්ටම ස්ටේබල් සහ වේගවත් Invidious සර්වර්ස් ලිස්ට් එකක්
+        INVIDIOUS_INSTANCES = [
+            "https://invidious.nerdvpn.de",
+            "https://yewtu.be",
+            "https://invidious.flokinet.to",
+            "https://inv.tux.digital",
+            "https://invidious.perennialte.ch"
+        ]
+
+        video_direct_url = None
+
+        print(f"🔍 වීඩියෝ ID [ {video_id} ] සඳහා ක්ලවුඩ් බයිපාස් සර්වර්ස් පිරික්සමින් පවතී...")
+
+        # 🔄 එක සර්වර් එකක් Fail වුණොත් ඊළඟ එකට ඔටෝම මාරු වෙන ලූප් එක
+        for instance in INVIDIOUS_INSTANCES:
+            try:
+                print(f"📡 {instance} සර්වර් එකෙන් ට්‍රයි කරනවා...")
+                api_url = f"{instance}/api/v1/videos/{video_id}"
+                response = requests.get(api_url, timeout=10).json()
+                
+                format_streams = response.get("formatStreams", [])
+                if format_streams:
+                    # තියෙන ඒවායින් හොඳම කොලිටි (ගොඩක් වෙලාවට 720p/360p mp4) ලින්ක් එක ගන්නවා
+                    video_direct_url = format_streams[-1].get("url")
+                    if video_direct_url:
+                        print(f"✅ සාර්ථකයි! {instance} සර්වර් එකෙන් ඩිරෙක්ට් ලින්ක් එක හම්බවුණා.")
+                        break
+            except Exception as e:
+                print(f"⚠️ මේ සර්වර් එකේ අවුලක්: {e}. ඊළඟ එක බලමු...")
+                continue
+
+        if video_direct_url:
+            print("📥 වීඩියෝව 0% උඹේ ඩේටා වලින් ක්ලවුඩ් එක ඇතුළට බාගත වෙමින් පවතී...")
+            # wget මඟින් කෙළින්ම වීඩියෝව සර්වර් එකට ගන්නවා
+            os.system(f"wget -O video.mp4 '{video_direct_url}'")
+            print("✅ video.mp4 සාර්ථකව සේව් කරගත්තා!")
+        else:
+            print("❌ සර්වර්ස් ඔක්කොම බ්ලොක් මචං! මේ වීඩියෝ එක ඩවුන්ලෝඩ් කරන්න දෙන්නේ නැහැ.")
+            sys.exit(1)
         EOF
 
     - name: Download Background Music
@@ -72,5 +101,5 @@ jobs:
         git config --global user.name "GitHub Action"
         git config --global user.email "action@github.com"
         git add video.mp4 music.mp3
-        git commit -m "Auto downloaded assets via Cobalt Bypass" || echo "වෙනස්කම් නැත"
+        git commit -m "Auto downloaded assets via Invidious Bypass" || echo "වෙනස්කම් නැත"
         git push origin main

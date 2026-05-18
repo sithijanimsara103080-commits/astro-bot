@@ -1,4 +1,4 @@
-name: 24/7 Car Crushing Reverse Streamer
+name: 24/7 Car Crushing Reverse Streamer (Fixed Bot Error)
 
 on:
   push:
@@ -17,41 +17,25 @@ jobs:
     - name: Install System Dependencies & FFmpeg
       run: |
         sudo apt-get update
-        sudo apt-get install -y ffmpeg python3-pip
-
-    - name: Install yt-dlp
-      run: |
-        sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
-        sudo chmod a+rx /usr/local/bin/yt-dlp
+        sudo apt-get install -y ffmpeg
 
     - name: Run Single Custom Stream
       env:
         KEY_2: "6j63-es9v-kvq1-wmry-66g2"
       run: |
-        python - <<EOF
-        import os
-        import subprocess
-        import time
-
+        # 🎯 yt-dlp මඟුල් මුකුත් නැහැ. කෙළින්ම Cloud එකේ තියෙන Direct MP4 ලින්ක් එකක් පාවිච්චි කරන්නේ.
+        # (මෙතනට උඹේම වීඩියෝ එකක Google Drive Direct Link එකක් වුණත් පස්සේ දාන්න පුළුවන්)
+        VIDEO_URL="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        
         # 🎵 කෝපිරයිට් නැති බැක්ග්‍රවුන්ඩ් සින්දුව
-        BG_MUSIC_1 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        BG_MUSIC="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
         
-        stream_key = os.getenv("KEY_2")
+        HLS_URL="https://a.upload.youtube.com/http_upload_hls?cid=$KEY_2&copy=0&file=live.m3u8"
         
-        # 🔍 යූටියුබ් එකෙන් වීඩියෝ ලින්ක් එක ක්ලවුඩ් එකට අදිනවා
-        vid_url_cmd = "yt-dlp -g -f 'bestvideo[ext=mp4]'" + " https://www.youtube.com/watch?v=QhYAr74CuMs"
-        video_direct_url = subprocess.check_output(vid_url_cmd, shell=True).decode('utf-8').strip().split('\n')[0]
-        
-        hls_url = f"https://a.upload.youtube.com/http_upload_hls?cid={stream_key}&copy=0&file=live.m3u8"
+        echo "🚀 යූටියුබ් බොට් බ්ලොක් එක බයිපාස් කරලා කෙළින්ම ස්ට්‍රීම් එක තල්ලු කරනවා..."
         
         # 🎯 FFmpeg Magic: ලූප් කරනවා, රිවර්ස් කරනවා, වර්ටිකල් ක්‍රොප් කරනවා, සින්දුව මික්ස් කරනවා
-        ffmpeg_cmd = (
-            f"ffmpeg -re -stream_loop -1 -i '{video_direct_url}' -stream_loop -1 -i '{BG_MUSIC_1}' "
-            f"-filter_complex \"[0:v]reverse,crop=ih*9/16:ih,scale=1080:1920[v];[1:a]volume=0.8[bg]\" "
-            f"-map \"[v]\" -map \"[bg]\" -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -r 30 -g 60 -b:v 3000k "
-            f"-acodec aac -b:a 128k -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST '{hls_url}'"
-        )
-        
-        print("🚀 Stream 2 (Car Crushing Reverse) සජීවීව යූටියුබ් එකට තල්ලු කරනවා...")
-        subprocess.run(ffmpeg_cmd, shell=True)
-        EOF
+        ffmpeg -re -stream_loop -1 -i "$VIDEO_URL" -stream_loop -1 -i "$BG_MUSIC" \
+          -filter_complex "[0:v]reverse,crop=ih*9/16:ih,scale=1080:1920[v];[1:a]volume=0.8[bg]" \
+          -map "[v]" -map "[bg]" -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -r 30 -g 60 -b:v 3000k \
+          -acodec aac -b:a 128k -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST "$HLS_URL"

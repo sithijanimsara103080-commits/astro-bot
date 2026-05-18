@@ -1,0 +1,89 @@
+name: 24/7 Full Vertical Chat Streamer
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # බටන් එකෙන් ස්ටාර්ට්/ස්ටොප් කරන්න
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg xvfb chromium-browser chromium-chromedriver
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Python Packages
+      run: |
+        pip install selenium pillow
+
+    - name: Run Background Browser and Stream
+      env:
+        STREAM_KEY: ${{ secrets.STREAM_KEY }}
+      run: |
+        python - <<EOF
+        import os
+        import subprocess
+        import threading
+        import time
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+
+        LIVE_CHAT_URL = "https://studio.youtube.com/live_chat?is_popout=1&v=zX7iYrKOY84"
+        STREAM_KEY = os.getenv("STREAM_KEY")
+        OVERLAY_IMAGE = "chat_screen.png"
+
+        # 1. 🌐 Setup Headless Chromium (බලෙන්ම මොබයිල් වර්ටිකල් සෙටින්ග්ස් දානවා)
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        
+        # 🎯 මෙන්න ට්‍රික් එක: බ්‍රවුසර් එක ඇන්ඩ්‍රොයිඩ් ෆෝන් එකක් විදිහට වෙස් ගන්වනවා (Mobile View)
+        mobile_emulation = { "deviceName": "Nexus 5" }
+        chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
+        chrome_options.add_argument("--window-size=1080,1920") 
+
+        driver = webdriver.Chrome(options=chrome_options)
+        driver.get(LIVE_CHAT_URL)
+        print("✅ වර්ටිකල් මොබයිල් චැට් එකට සාර්ථකව සම්බන්ධ වුණා!")
+        time.sleep(12) # චැට් එක සම්පූර්ණයෙන්ම ලෝඩ් වෙන්න තත්පර 12ක් දෙනවා
+
+        # 2. 📸 Screenshot Thread (හැම තත්පරෙම 1080x1920 වර්ටිකල් පින්තූරයක් ගන්නවා)
+        def capture_chat():
+            while True:
+                try:
+                    driver.save_screenshot(OVERLAY_IMAGE)
+                except:
+                    pass
+                time.sleep(1)
+
+        t = threading.Thread(target=capture_chat, daemon=True)
+        t.start()
+
+        # 3. 🎥 FFmpeg High-Speed 1080x1920 Vertical Stream Start
+        time.sleep(6) # පළමු වර්ටිකල් පින්තූරය හැදෙනකන් ඉන්නවා
+        hls_url = f"https://a.upload.youtube.com/http_upload_hls?cid={STREAM_KEY}&copy=0&file=live.m3u8"
+        
+        # 🎯 මෙතන -s 1080x1920 දාලා වීඩියෝ අවුට්පුට් එක 100%ක්ම වර්ටිකල් (Shorts/Reels Layout) කලා මචං
+        ffmpeg_cmd = (
+            f"ffmpeg -re -loop 1 -i {OVERLAY_IMAGE} -f lavfi -i anullsrc=cl=stereo:r=44100 "
+            f"-vcodec libx264 -pix_fmt yuv420p -s 1080x1920 -preset ultrafast -r 30 -g 60 -b:v 3000k -maxrate 3000k -bufsize 6000k "
+            f"-acodec aac -b:a 128k -ar 44100 -shortest "
+            f"-f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST '{hls_url}'"
+        )
+
+        print("🚀 FFmpeg 1080x1920 වර්ටිකල් ස්ට්‍රීම් එක යූටියුබ් එකට තල්ලු කරනවා...")
+        subprocess.run(ffmpeg_cmd, shell=True)
+        EOF

@@ -1,14 +1,14 @@
-name: Cloud Video & Music Auto Downloader (0% Your Data)
+name: Cloud Video & Music Auto Downloader (Bypass Bot Block)
 
 on:
   workflow_dispatch:
     inputs:
       youtube_url:
-        description: 'ලයිව් දාන්න ඕන YouTube වීඩියෝ ලින්ක් එක දාන්න'
+        description: 'YouTube වීඩියෝ ලින්ක් එක'
         required: true
         default: 'https://www.youtube.com/watch?v=QhYAr74CuMs'
       music_url:
-        description: 'කෝපිරයිට් නැති සින්දුවේ Direct MP3 ලින්ක් එක දාන්න'
+        description: 'කෝපිරයිට් නැති සින්දුවේ ලින්ක් එක'
         required: true
         default: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
 
@@ -16,23 +16,54 @@ jobs:
   download:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # GitHub එකට ෆයිල්ස් සේව් කරන්න අවසර දෙනවා
+      contents: write
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Install yt-dlp
-      run: |
-        sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
-        sudo chmod a+rx /usr/local/bin/yt-dlp
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-    - name: Cloud Download Assets
+    - name: Install Python Requests
+      run: pip install requests
+
+    - name: Bypass and Download Video
       run: |
-        echo "📥 යූටියුබ් වීඩියෝව ක්ලවුඩ් එක ඇතුළෙන්ම බාගත වෙමින් පවතී..."
-        # 🎯 වීඩියෝව 720p හෝ 1080p වලින් කෙළින්ම video.mp4 නමින් සර්වර් එකට ගන්නවා
-        yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" --merge-output-format mp4 "${{ github.event.inputs.youtube_url }}" -o "video.mp4"
+        python - <<EOF
+        import requests
+        import time
+        import os
+
+        yt_url = "${{ github.event.inputs.youtube_url }}"
+        print("🔍 Third-party API එකක් හරහා වීඩියෝ ලින්ක් එක බයිපාස් කරනවා...")
         
+        # Cobalt API එක පාවිච්චි කරලා යූටියුබ් බොට් බ්ලොක් එක කෙළින්ම බයිපාස් කරනවා
+        api_url = "https://api.cobalt.tools/api/json"
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        payload = {"url": yt_url, "vQuality": "720", "isAudioOnly": False}
+        
+        try:
+            response = requests.post(api_url, json=payload, headers=headers).json()
+            video_direct_url = response.get("url")
+            
+            if video_direct_url:
+                print("📥 බයිපාස් එක සාර්ථකයි! වීඩියෝව ක්ලවුඩ් එක ඇතුළට බාගත වෙමින් පවතී...")
+                # 0% ඩේටා වලින් සර්වර් එක ඇතුළටම ගන්නවා
+                os.system(f"wget -O video.mp4 '{video_direct_url}'")
+                print("✅ video.mp4 සාර්ථකව සේව් කරගත්තා!")
+            else:
+                print("❌ API එකෙන් ලින්ක් එක දුන්නේ නැහැ මචං.")
+                exit(1)
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            exit(1)
+        EOF
+
+    - name: Download Background Music
+      run: |
         echo "📥 සින්දුව බාගත වෙමින් පවතී..."
         wget -O music.mp3 "${{ github.event.inputs.music_url }}"
 
@@ -41,5 +72,5 @@ jobs:
         git config --global user.name "GitHub Action"
         git config --global user.email "action@github.com"
         git add video.mp4 music.mp3
-        git commit -m "Auto downloaded assets via Cloud" || echo "වෙනස්කම් කිසිවක් නැත!"
+        git commit -m "Auto downloaded assets via Cobalt Bypass" || echo "වෙනස්කම් නැත"
         git push origin main

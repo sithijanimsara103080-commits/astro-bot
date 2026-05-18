@@ -1,41 +1,45 @@
-name: 24/7 Car Crushing Reverse Streamer (Fixed Bot Error)
+name: Cloud Video & Music Auto Downloader (0% Your Data)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      youtube_url:
+        description: 'ලයිව් දාන්න ඕන YouTube වීඩියෝ ලින්ක් එක දාන්න'
+        required: true
+        default: 'https://www.youtube.com/watch?v=QhYAr74CuMs'
+      music_url:
+        description: 'කෝපිරයිට් නැති සින්දුවේ Direct MP3 ලින්ක් එක දාන්න'
+        required: true
+        default: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
 
 jobs:
-  stream:
+  download:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # GitHub එකට ෆයිල්ස් සේව් කරන්න අවසර දෙනවා
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Install System Dependencies & FFmpeg
+    - name: Install yt-dlp
       run: |
-        sudo apt-get update
-        sudo apt-get install -y ffmpeg
+        sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
+        sudo chmod a+rx /usr/local/bin/yt-dlp
 
-    - name: Run Single Custom Stream
-      env:
-        KEY_2: "6j63-es9v-kvq1-wmry-66g2"
+    - name: Cloud Download Assets
       run: |
-        # 🎯 yt-dlp මඟුල් මුකුත් නැහැ. කෙළින්ම Cloud එකේ තියෙන Direct MP4 ලින්ක් එකක් පාවිච්චි කරන්නේ.
-        # (මෙතනට උඹේම වීඩියෝ එකක Google Drive Direct Link එකක් වුණත් පස්සේ දාන්න පුළුවන්)
-        VIDEO_URL="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        echo "📥 යූටියුබ් වීඩියෝව ක්ලවුඩ් එක ඇතුළෙන්ම බාගත වෙමින් පවතී..."
+        # 🎯 වීඩියෝව 720p හෝ 1080p වලින් කෙළින්ම video.mp4 නමින් සර්වර් එකට ගන්නවා
+        yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" --merge-output-format mp4 "${{ github.event.inputs.youtube_url }}" -o "video.mp4"
         
-        # 🎵 කෝපිරයිට් නැති බැක්ග්‍රවුන්ඩ් සින්දුව
-        BG_MUSIC="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-        
-        HLS_URL="https://a.upload.youtube.com/http_upload_hls?cid=$KEY_2&copy=0&file=live.m3u8"
-        
-        echo "🚀 යූටියුබ් බොට් බ්ලොක් එක බයිපාස් කරලා කෙළින්ම ස්ට්‍රීම් එක තල්ලු කරනවා..."
-        
-        # 🎯 FFmpeg Magic: ලූප් කරනවා, රිවර්ස් කරනවා, වර්ටිකල් ක්‍රොප් කරනවා, සින්දුව මික්ස් කරනවා
-        ffmpeg -re -stream_loop -1 -i "$VIDEO_URL" -stream_loop -1 -i "$BG_MUSIC" \
-          -filter_complex "[0:v]reverse,crop=ih*9/16:ih,scale=1080:1920[v];[1:a]volume=0.8[bg]" \
-          -map "[v]" -map "[bg]" -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -r 30 -g 60 -b:v 3000k \
-          -acodec aac -b:a 128k -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments -method POST "$HLS_URL"
+        echo "📥 සින්දුව බාගත වෙමින් පවතී..."
+        wget -O music.mp3 "${{ github.event.inputs.music_url }}"
+
+    - name: Save Files into Github Repository (Push)
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+        git add video.mp4 music.mp3
+        git commit -m "Auto downloaded assets via Cloud" || echo "වෙනස්කම් කිසිවක් නැත!"
+        git push origin main
